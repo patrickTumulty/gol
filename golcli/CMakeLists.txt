@@ -5,7 +5,11 @@ project(golcli)
 
 file(GLOB SOURCES src/main.cpp)
 
+find_package(Curses REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC gol)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CURSES_INCLUDE_DIRS})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC gol ${CURSES_LIBRARIES})
 
