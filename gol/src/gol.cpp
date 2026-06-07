@@ -1,56 +1,6 @@
 
 #include "gol.hpp"
-#include <vector>
-
-#define IN_BOUNDS_INC(V, LOWER, UPPER) ((V) >= (LOWER) && (V) <= (UPPER))
-
-BoolMat::BoolMat(int height, int width) : _height(height), _width(width), _mat()
-{
-    for (int i = 0; i < height; i++)
-    {
-        _mat.push_back(std::vector<bool>(_width, false));
-    }
-}
-
-BoolMat::~BoolMat() = default;
-
-int BoolMat::GetHeight() const
-{
-    return _height;
-}
-
-int BoolMat::GetWidth() const
-{
-    return _width;
-};
-
-BoolMat::BoolMat(const BoolMat &other)
-{
-    _width = other._width;
-    _height = other._height;
-    for (int i = 0; i < _height; i++)
-    {
-        _mat.push_back(std::vector<bool>(other._mat[i]));
-    }
-}
-
-bool BoolMat::GetCell(int x, int y) const
-{
-    if (!IN_BOUNDS_INC(x, 0, _width) || !IN_BOUNDS_INC(y, 0, _height))
-    {
-        return false;
-    }
-    return _mat[y][x];
-}
-
-void BoolMat::SetCell(int x, int y, bool value)
-{
-    if (!IN_BOUNDS_INC(x, 0, _width) || !IN_BOUNDS_INC(y, 0, _height))
-    {
-        return;
-    }
-    _mat[y][x] = value;
-}
+#include <cstdio>
 
 namespace
 {
@@ -71,35 +21,35 @@ static Move moves[] = {
     {-1, -1}, //
 };
 
-void GolEvaluateCell(int x, int y, const BoolMat &currentGen, BoolMat &nextGen, BoolMat &visited)
+void GolEvaluateCell(int x, int y, const mat<bool> &currentGen, mat<bool> &nextGen, mat<bool> &visited)
 {
-    if (visited.GetCell(x, y))
+    if (visited.get_cell(x, y).value_or(true))
     {
         return;
     }
 
-    visited.SetCell(x, y, true);
+    visited.set_cell(x, y, true);
 
     int neighbours = 0;
     for (auto move : moves)
     {
-        neighbours += currentGen.GetCell(x + move.x, y + move.y);
+        neighbours += currentGen.get_cell(x + move.x, y + move.y).value_or(0);
     }
 
-    bool alive = currentGen.GetCell(x, y);
+    bool alive = currentGen.get_cell(x, y).value_or(false);
 
     if (not alive)
     {
         if (neighbours == 3)
         {
-            nextGen.SetCell(x, y, true); // Cell Reproduction
+            nextGen.set_cell(x, y, true); // Cell Reproduction
         }
         return;
     }
 
     if (neighbours < 2 || neighbours > 3)
     {
-        nextGen.SetCell(x, y, false); // The Cell Dies
+        nextGen.set_cell(x, y, false); // The Cell Dies
     }
     else if (neighbours == 2 || neighbours == 3)
     {
@@ -113,15 +63,16 @@ void GolEvaluateCell(int x, int y, const BoolMat &currentGen, BoolMat &nextGen, 
 }
 }; // namespace
 
-void GolTick(BoolMat &golMat)
+void GolTick(mat<bool> &golMat)
 {
-    BoolMat visited(golMat.GetHeight(), golMat.GetWidth());
-    const BoolMat currentGen(golMat);
-    for (int y = 0; y < golMat.GetHeight(); y++)
+    mat<bool> visited(golMat.height(), golMat.width(), false);
+    const mat<bool> currentGen(golMat);
+
+    for (int y = 0; y < golMat.height(); y++)
     {
-        for (int x = 0; x < golMat.GetWidth(); x++)
+        for (int x = 0; x < golMat.width(); x++)
         {
-            if (golMat.GetCell(x, y))
+            if (golMat.get_cell(x, y).value_or(false))
             {
                 GolEvaluateCell(x, y, currentGen, golMat, visited);
             }
