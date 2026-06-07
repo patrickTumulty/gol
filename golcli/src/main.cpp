@@ -11,7 +11,7 @@ int alt = 0;
 int cols = 0;
 int rows = 0;
 
-void drawTiles(mat<bool> &gol)
+void drawTiles(gol &gol)
 {
     for (int i = 0; i < gol.height(); i++)
     {
@@ -29,7 +29,7 @@ void drawTiles(mat<bool> &gol)
     }
 }
 
-void randomizeBoard(mat<bool> &gol)
+void randomizeBoard(gol &gol)
 {
     // 1. Initialize a random device and the engine
     std::random_device rd;
@@ -55,7 +55,7 @@ int main()
 
     getmaxyx(stdscr, rows, cols);
 
-    mat<bool> gol(rows, cols, false);
+    gol gol(rows, cols);
     randomizeBoard(gol);
 
     drawTiles(gol);
@@ -69,7 +69,7 @@ int main()
 
     while (true)
     {
-        GolTick(gol);
+        gol.tick();
         drawTiles(gol);
         refresh();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

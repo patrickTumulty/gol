@@ -2,67 +2,33 @@
 #ifndef GOL_HPP
 #define GOL_HPP
 
-#include <optional>
-#include <vector>
+#include "mat.hpp"
 
-#define IN_BOUNDS_INC(V, LOWER, UPPER) ((V) >= (LOWER) && (V) <= (UPPER))
-
-template <typename T> class mat
+class gol
 {
   public:
-    mat(int height, int width, T initialValue) : _height(height), _width(width)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            _mat.push_back(std::vector<T>(_width, initialValue));
-        }
-    }
+    gol(int height, int width);
+    ~gol() = default;
 
-    ~mat() = default;
-    mat(const mat<T> &other)
-    {
-        _width = other._width;
-        _height = other._height;
-        for (int i = 0; i < _height; i++)
-        {
-            _mat.push_back(std::vector<T>(other._mat[i]));
-        }
-    }
+    void tick();
 
-    int height()
-    {
-        return _height;
-    }
+    void set_cell(int x, int y, bool value);
+    std::optional<bool> get_cell(int x, int y) const;
 
-    int width()
-    {
-        return _width;
-    }
-
-    std::optional<T> get_cell(int x, int y) const
-    {
-        if (!IN_BOUNDS_INC(x, 0, _width - 1) || !IN_BOUNDS_INC(y, 0, _height - 1))
-        {
-            return {};
-        }
-        return _mat[y][x];
-    }
-
-    void set_cell(int x, int y, T value)
-    {
-        if (!IN_BOUNDS_INC(x, 0, _width - 1) || !IN_BOUNDS_INC(y, 0, _height - 1))
-        {
-            return;
-        }
-        _mat[y][x] = value;
-    }
+    int height() const;
+    int width() const;
 
   private:
-    int _height;
-    int _width;
-    std::vector<std::vector<T>> _mat;
+
+
+    mat<bool> _gol_state;
+    mat<bool> _gol_copy;
+    mat<bool> _visited;
+
+    int _total_generations;
+    std::size_t _generation_hash;
 };
 
-void GolTick(mat<bool> &golMat);
+void gol_tick(mat<bool> &golMat);
 
 #endif // GOL_HPP
