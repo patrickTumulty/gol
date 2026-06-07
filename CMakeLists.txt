@@ -14,5 +14,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
+add_subdirectory(submodules)
+
 add_subdirectory(gol)
 add_subdirectory(golcli)

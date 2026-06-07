@@ -1,125 +1,15 @@
 
 #include "gol.hpp"
+#include "gol_utils.hpp"
 #include <cstdio>
 
-namespace
-{
-struct move
-{
-    int x;
-    int y;
-};
+#define SEQUENCE_DETECT_BUFFER_SIZE 30
 
-static move moves[] = {
-    {1, 0},   //
-    {0, 1},   //
-    {-1, 0},  //
-    {0, -1},  //
-    {1, 1},   //
-    {-1, 1},  //
-    {1, -1},  //
-    {-1, -1}, //
-};
-
-void gol_eval_cell(int x, int y, const mat<bool> &currentGen, mat<bool> &nextGen, mat<bool> &visited)
-{
-    if (visited.get_cell(x, y).value_or(true))
-    {
-        return;
-    }
-
-    visited.set_cell(x, y, true);
-
-    int neighbours = 0;
-    for (auto move : moves)
-    {
-        neighbours += currentGen.get_cell(x + move.x, y + move.y).value_or(0);
-    }
-
-    bool alive = currentGen.get_cell(x, y).value_or(false);
-
-    if (not alive)
-    {
-        if (neighbours == 3)
-        {
-            nextGen.set_cell(x, y, true); // Cell Reproduction
-        }
-        return;
-    }
-
-    if (neighbours < 2 || neighbours > 3)
-    {
-        nextGen.set_cell(x, y, false); // The Cell Dies
-    }
-    else if (neighbours == 2 || neighbours == 3)
-    {
-        // The Cell Lives
-    }
-
-    for (auto move : moves)
-    {
-        gol_eval_cell(x + move.x, y + move.y, currentGen, nextGen, visited);
-    }
-}
-
-void clear_mat(mat<bool> &m)
-{
-    for (int i = 0; i < m.height(); i++)
-    {
-        for (int j = 0; j < m.width(); j++)
-        {
-            m.set_cell(j, i, false);
-        }
-    }
-}
-
-void copy_mat(mat<bool> &dest, const mat<bool> &src)
-{
-    for (int y = 0; y < src.height(); y++)
-    {
-        for (int x = 0; x < src.width(); x++)
-        {
-            dest.set_cell(x, y, src.get_cell(x, y).value_or(false));
-        }
-    }
-}
-
-int count_live_cells(const mat<bool> &m)
-{
-    int count = 0;
-    for (int y = 0; y < m.height(); y++)
-    {
-        for (int x = 0; x < m.width(); x++)
-        {
-            if (m.get_cell(x, y).value_or(false))
-            {
-                count++;
-            }
-        }
-    }
-    return count;
-}
-
-std::size_t hash_mat(const mat<bool> &m)
-{
-    std::size_t hash = 0;
-
-    for (int y = 0; y < m.height(); y++)
-    {
-        for (int x = 0; x < m.width(); x++)
-        {
-            bool b = m.get_cell(x, y).value_or(false);
-            hash ^= std::hash<bool>{}(b) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        }
-    }
-
-    return hash;
-}
-
-}; // namespace
-
-gol::gol(int height, int width)
-    : _gol_state(height, width, false), _gol_copy(height, width, false), _visited(height, width, false)
+gol::gol(int height, int width)         //
+    : _gol_state(height, width, false), //
+      _gol_copy(height, width, false),  //
+      _visited(height, width, false),   //
+      _sequence_detect(SEQUENCE_DETECT_BUFFER_SIZE, 0)
 {
 }
 
@@ -148,29 +38,10 @@ std::optional<bool> gol::get_cell(int x, int y) const
     return _gol_state.get_cell(x, y);
 }
 
-int inc_circular_idx(int current, int inc)
-{
-    return (current + inc) % SEQUENCE_DETECT_LEN;
-}
-
 bool gol::check_for_seqence()
 {
-    std::size_t a = _sequence_detect[_seqence_detect_idx];
-    for (int i = 1; i < SEQUENCE_DETECT_LEN; i++)
-    {
-        int idx = inc_circular_idx(_seqence_detect_idx, 1);
-        std::size_t b = _sequence_detect[idx];
-        if (a == b)
-        {
-            idx = inc_circular_idx(idx, i);
-            std::size_t c = _sequence_detect[idx];
-            if (a == b && b == c)
-            {
-                return true;
-            }
-        }
-    }
-    return false;
+    auto period = detect_period(_sequence_detect, 15, 2);
+    return period.has_value();
 }
 
 bool gol::tick()
@@ -188,9 +59,13 @@ bool gol::tick()
         }
     }
     _total_generations++;
-    std::size_t hash = hash_mat(_gol_state);
-    _seqence_detect_idx = (_seqence_detect_idx + 1) % SEQUENCE_DETECT_LEN;
-    _sequence_detect[_seqence_detect_idx] = hash;
+    _seqence_detect_idx = inc_circular_idx(_seqence_detect_idx, 1, _sequence_detect.size());
+    _sequence_detect[_seqence_detect_idx] = hash_mat(_gol_state);
     _current_cell_count = count_live_cells(_gol_state);
-    return _current_cell_count > 0 and not check_for_seqence();
+    bool sequence_present = false;
+    if (_total_generations % SEQUENCE_DETECT_BUFFER_SIZE == 0)
+    {
+        sequence_present = check_for_seqence();
+    }
+    return _current_cell_count > 0 and not sequence_present;
 }

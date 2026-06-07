@@ -4,8 +4,6 @@
 
 #include "mat.hpp"
 
-#define SEQUENCE_DETECT_LEN 20
-
 class gol
 {
   public:
@@ -31,7 +29,7 @@ class gol
     int _total_generations = 0;
     int _current_cell_count = 0;
     std::size_t _generation_hash = 0;
-    std::size_t _sequence_detect[SEQUENCE_DETECT_LEN];
+    std::vector<std::size_t> _sequence_detect;
     int _seqence_detect_idx = 0;
 };
 
