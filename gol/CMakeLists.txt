@@ -6,6 +6,7 @@ project(gol)
 file(GLOB SOURCES 
    src/gol.cpp
    src/gol_utils.cpp
+   src/gol_randomizer.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
