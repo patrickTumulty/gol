@@ -133,6 +133,11 @@ int gol::width() const
     return _gol_state.width();
 }
 
+int gol::total_generations() const
+{
+    return _total_generations;
+}
+
 void gol::set_cell(int x, int y, bool value)
 {
     _gol_state.set_cell(x, y, value);
@@ -143,7 +148,32 @@ std::optional<bool> gol::get_cell(int x, int y) const
     return _gol_state.get_cell(x, y);
 }
 
-void gol::tick()
+int inc_circular_idx(int current, int inc)
+{
+    return (current + inc) % SEQUENCE_DETECT_LEN;
+}
+
+bool gol::check_for_seqence()
+{
+    std::size_t a = _sequence_detect[_seqence_detect_idx];
+    for (int i = 1; i < SEQUENCE_DETECT_LEN; i++)
+    {
+        int idx = inc_circular_idx(_seqence_detect_idx, 1);
+        std::size_t b = _sequence_detect[idx];
+        if (a == b)
+        {
+            idx = inc_circular_idx(idx, i);
+            std::size_t c = _sequence_detect[idx];
+            if (a == b && b == c)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool gol::tick()
 {
     clear_mat(_visited);
     copy_mat(_gol_copy, _gol_state);
@@ -157,4 +187,10 @@ void gol::tick()
             }
         }
     }
+    _total_generations++;
+    std::size_t hash = hash_mat(_gol_state);
+    _seqence_detect_idx = (_seqence_detect_idx + 1) % SEQUENCE_DETECT_LEN;
+    _sequence_detect[_seqence_detect_idx] = hash;
+    _current_cell_count = count_live_cells(_gol_state);
+    return _current_cell_count > 0 and not check_for_seqence();
 }

@@ -2,6 +2,7 @@
 
 #include "gol.hpp"
 #include <clocale>
+#include <cstdint>
 #include <ncurses.h>
 #include <ncursesw/ncurses.h>
 #include <random>
@@ -47,6 +48,12 @@ void randomizeBoard(gol &gol)
     }
 }
 
+std::int64_t timestamp_ms()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+        .count();
+}
+
 int main()
 {
     initscr();
@@ -67,15 +74,16 @@ int main()
 
     int counter = 0;
 
-    while (true)
+    while (gol.tick())
     {
-        gol.tick();
         drawTiles(gol);
         refresh();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     endwin();
+
+    printf("%d\n", gol.total_generations());
 
     return 0;
 }
