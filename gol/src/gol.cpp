@@ -13,6 +13,8 @@ gol::gol(int height, int width)         //
 {
 }
 
+gol::~gol() = default;
+
 int gol::height() const
 {
     return _gol_state.height();
@@ -33,6 +35,16 @@ void gol::set_cell(int x, int y, bool value)
     _gol_state.set_cell(x, y, value);
 }
 
+std::optional<int> gol::stable_period() const
+{
+    return _stable_period;
+}
+
+gol_end_state gol::end_state() const
+{
+    return _end_state;
+}
+
 std::optional<bool> gol::get_cell(int x, int y) const
 {
     return _gol_state.get_cell(x, y);
@@ -41,7 +53,13 @@ std::optional<bool> gol::get_cell(int x, int y) const
 bool gol::check_for_seqence()
 {
     auto period = detect_period(_sequence_detect, 15, 2);
-    return period.has_value();
+    if (period.has_value())
+    {
+        _end_state = STABILITY;
+        _stable_period = period.value();
+        return true;
+    }
+    return false;
 }
 
 bool gol::tick()
@@ -67,5 +85,14 @@ bool gol::tick()
     {
         sequence_present = check_for_seqence();
     }
-    return _current_cell_count > 0 and not sequence_present;
+    if (_end_state == STABILITY)
+    {
+        return false;
+    }
+    if (_current_cell_count == 0)
+    {
+        _end_state = DESTRUCTION;
+        return false;
+    }
+    return true;
 }

@@ -4,11 +4,18 @@
 
 #include "mat.hpp"
 
+enum gol_end_state
+{
+    UNDETERMINED,
+    DESTRUCTION,
+    STABILITY
+};
+
 class gol
 {
   public:
     gol(int height, int width);
-    ~gol() = default;
+    ~gol() ;
 
     bool tick();
 
@@ -18,6 +25,8 @@ class gol
     int height() const;
     int width() const;
     int total_generations() const;
+    std::optional<int> stable_period() const;
+    gol_end_state end_state() const;
 
   private:
     bool check_for_seqence();
@@ -31,8 +40,8 @@ class gol
     std::size_t _generation_hash = 0;
     std::vector<std::size_t> _sequence_detect;
     int _seqence_detect_idx = 0;
+    gol_end_state _end_state = UNDETERMINED;
+    std::optional<int> _stable_period = {};
 };
-
-void gol_tick(mat<bool> &golMat);
 
 #endif // GOL_HPP

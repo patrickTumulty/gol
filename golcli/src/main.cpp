@@ -3,6 +3,7 @@
 #include "gol.hpp"
 #include <clocale>
 #include <cstdint>
+#include <cstdio>
 #include <ncurses.h>
 #include <ncursesw/ncurses.h>
 #include <random>
@@ -12,7 +13,7 @@ int alt = 0;
 int cols = 0;
 int rows = 0;
 
-void drawTiles(gol &gol)
+void draw_tiles(gol &gol)
 {
     for (int i = 0; i < gol.height(); i++)
     {
@@ -30,20 +31,42 @@ void drawTiles(gol &gol)
     }
 }
 
-void randomizeBoard(gol &gol)
+void randomize_board(gol &gol, std::uint32_t seed)
 {
-    // 1. Initialize a random device and the engine
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen(seed);
 
-    // 2. Define a Bernoulli distribution (50% chance of true by default)
-    std::bernoulli_distribution d(0.5);
+    double density = 0.0;
 
-    for (int i = 0; i < gol.height(); i++)
+    switch (seed % 4)
     {
-        for (int j = 0; j < gol.width(); j++)
+    case 0:
+        // Sparse
+        density = 0.1;
+        break;
+
+    case 1:
+        // Dense
+        density = 0.6;
+        break;
+
+    case 2:
+        // Medium
+        density = 0.3;
+        break;
+
+    case 3:
+        // Random density
+        density = std::uniform_real_distribution<double>(0.05, 0.95)(gen);
+        break;
+    }
+
+    std::bernoulli_distribution alive(density);
+
+    for (int y = 0; y < gol.height(); ++y)
+    {
+        for (int x = 0; x < gol.width(); ++x)
         {
-            gol.set_cell(j, i, d(gen));
+            gol.set_cell(x, y, alive(gen));
         }
     }
 }
@@ -62,28 +85,28 @@ int main()
 
     getmaxyx(stdscr, rows, cols);
 
-    gol gol(rows, cols);
-    randomizeBoard(gol);
+    std::uint32_t seed = std::random_device{}();
 
-    drawTiles(gol);
+    gol gol(20, 20);
+    randomize_board(gol, seed);
+
+    draw_tiles(gol);
     refresh();
-
-    int frame = 0;
-    float framerate = 15.0;
-    int frameDeltaMS = (1.0f / framerate) * 1000;
-
-    int counter = 0;
 
     while (gol.tick())
     {
-        drawTiles(gol);
+        draw_tiles(gol);
         refresh();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     endwin();
 
-    printf("%d\n", gol.total_generations());
+    printf("Dimensions     : %dx%d\n", gol.height(), gol.width());
+    printf("Seed           : 0x%X\n", seed);
+    printf("Generations    : %d\n", gol.total_generations());
+    printf("Ending State   : %d\n", gol.end_state());
+    printf("Stable Periods : %d\n", gol.stable_period().value_or(0));
 
     return 0;
 }
