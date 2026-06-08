@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(golcli)
 
-file(GLOB SOURCES src/main.cpp)
+file(GLOB SOURCES 
+    src/main.cpp
+    src/ascii_title.cpp
+)
 
 find_package(Curses REQUIRED)
 
