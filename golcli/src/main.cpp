@@ -121,36 +121,15 @@ int main()
     refresh();
 
     int title_offset = (cols / 2) - (97 / 2);
-    WINDOW *title_win = newwin(17, 97, 0, title_offset);
+    WINDOW *title_win = newwin(17, 97, 2, title_offset);
 
-    WINDOW *options_win = newwin(10, 30, 0, 20);
+    int options_offset = (cols / 2) - (30 / 2);
+    WINDOW *options_win = newwin(10, 30, 20, options_offset);
 
     while (true)
     {
-        clear();
-
-        int start_row = (rows - (int)items.size()) / 2;
-
+        werase(title_win);
         mvwprintw(options_win, 1, 1, "Main Menu");
-
-        for (int i = 0; i < (int)items.size(); ++i)
-        {
-            int x = (cols - items[i].size()) / 2;
-            int y = start_row + i;
-
-            if (i == selected)
-            {
-                attron(A_REVERSE);
-                mvprintw(y, x, "%s", items[i].c_str());
-                attroff(A_REVERSE);
-            }
-            else
-            {
-                mvprintw(y, x, "%s", items[i].c_str());
-            }
-        }
-
-        wrefresh(options_win);
 
         int ch = getch();
 
@@ -159,23 +138,37 @@ int main()
         case KEY_UP:
             selected = (selected == 0) ? items.size() - 1 : selected - 1;
             break;
-
         case KEY_DOWN:
             selected = (selected == (int)items.size() - 1) ? 0 : selected + 1;
             break;
-
         case 10: // Enter
             endwin();
             printf("Selected: %s\n", items[selected].c_str());
             return 0;
         }
 
+        for (int i = 0; i < (int)items.size(); ++i)
+        {
+            int x = (cols - items[i].size()) / 2;
+            int y = i + 2;
+
+            if (i == selected)
+            {
+                wattron(options_win, A_REVERSE);
+                mvwprintw(options_win, y, 1, "* %-26s", items[i].c_str());
+                wattroff(options_win, A_REVERSE);
+            }
+            else
+            {
+                mvwprintw(options_win, y, 1, "* %-26s", items[i].c_str());
+            }
+        }
+
         wrefresh(options_win);
 
-        // print_ascii(title_win, ASCII_GAME_OF_LIFE_TITLE, 1, 1);
-        // wrefresh(title_win);
-        //
-        // refresh();
+        werase(title_win);
+        print_ascii(title_win, ASCII_GAME_OF_LIFE_TITLE, 1, 1);
+        wrefresh(title_win);
     }
 
     delwin(title_win);
