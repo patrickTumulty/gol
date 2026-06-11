@@ -1,8 +1,11 @@
 
 
 #include "ascii_title.hpp"
+#include "cli_window.hpp"
 #include "gol.hpp"
 #include "gol_randomizer.hpp"
+#include "options_window.hpp"
+#include <chrono>
 #include <clocale>
 #include <cstdint>
 #include <cstdio>
@@ -15,6 +18,10 @@
 int alt = 0;
 int cols = 0;
 int rows = 0;
+
+const option_item OPTION_NEW_GAME(0, "New Game");
+const option_item OPTION_REPLAY(1, "Replay");
+const option_item OPTION_EXIT(2, "Exit");
 
 void draw_tiles(gol &gol)
 {
@@ -76,7 +83,12 @@ std::int64_t timestamp_ms()
 
 #include <ncurses.h>
 #include <string>
-#include <vector>
+
+namespace
+{
+option_window option_win(10, 30);
+std::optional<option_item> selected;
+}; // namespace
 
 void print_ascii(WINDOW *win, const std::string &text, int start_y, int start_x)
 {
@@ -102,77 +114,66 @@ void print_ascii(WINDOW *win, const std::string &text, int start_y, int start_x)
         mvwprintw(win, y, x, "%s", line.c_str());
 }
 
-int main()
+void run_update_loop()
 {
-    std::vector<std::string> items = {"Start Game", "Load Game", "Settings", "Credits", "Exit"};
-
-    int selected = 0;
-
     initscr();
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
     curs_set(0);
-
-    int rows, cols;
-    getmaxyx(stdscr, rows, cols);
 
     clear();
     refresh();
 
-    int title_offset = (cols / 2) - (97 / 2);
-    WINDOW *title_win = newwin(17, 97, 2, title_offset);
-
-    int options_offset = (cols / 2) - (30 / 2);
-    WINDOW *options_win = newwin(10, 30, 20, options_offset);
+    cli_context ctx{0};
 
     while (true)
     {
-        werase(title_win);
-        mvwprintw(options_win, 1, 1, "Main Menu");
+        getmaxyx(stdscr, ctx.rows, ctx.cols);
 
         int ch = getch();
-
-        switch (ch)
+        if (ch == KEY_RESIZE)
         {
-        case KEY_UP:
-            selected = (selected == 0) ? items.size() - 1 : selected - 1;
-            break;
-        case KEY_DOWN:
-            selected = (selected == (int)items.size() - 1) ? 0 : selected + 1;
-            break;
-        case 10: // Enter
-            endwin();
-            printf("Selected: %s\n", items[selected].c_str());
-            return 0;
+            // endwin();
+            // refresh();
+            // clear();
+            //
+            // option_win.window_resize(ctx);
         }
 
-        for (int i = 0; i < (int)items.size(); ++i)
-        {
-            int x = (cols - items[i].size()) / 2;
-            int y = i + 2;
+        // werase(title_win);
+        // print_ascii(title_win, ASCII_GAME_OF_LIFE_TITLE, 1, 1);
+        // wrefresh(title_win);
 
-            if (i == selected)
-            {
-                wattron(options_win, A_REVERSE);
-                mvwprintw(options_win, y, 1, "* %-26s", items[i].c_str());
-                wattroff(options_win, A_REVERSE);
-            }
-            else
-            {
-                mvwprintw(options_win, y, 1, "* %-26s", items[i].c_str());
-            }
+        option_win.update(ctx);
+        selected = option_win.get_selected_item();
+        if (selected.has_value())
+        {
+            printf("Selected: %s\n", selected.value().name.c_str());
+            break;
         }
 
-        wrefresh(options_win);
-
-        werase(title_win);
-        print_ascii(title_win, ASCII_GAME_OF_LIFE_TITLE, 1, 1);
-        wrefresh(title_win);
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
 
-    delwin(title_win);
-    delwin(options_win);
-
     endwin();
+}
+
+int main()
+{
+    // int title_offset = (cols / 2) - (97 / 2);
+    // WINDOW *title_win = newwin(17, 97, 2, title_offset);
+
+    // int options_offset = (cols / 2) - (30 / 2);
+    // WINDOW *options_win = newwin(10, 30, 20, options_offset);
+    // mvwprintw(options_win, 1, 1, "Main Menu");
+
+    option_win.add_option(OPTION_NEW_GAME);
+    option_win.add_option(OPTION_REPLAY);
+    option_win.add_option(OPTION_EXIT);
+
+    run_update_loop();
+
+    printf("Selected: %s\n", selected.value_or(OPTION_EXIT).name.c_str());
 }

@@ -6,6 +6,7 @@ project(golcli)
 file(GLOB SOURCES
     src/main.cpp
     src/ascii_title.cpp
+    src/cli_window.cpp
     src/options_window.cpp
 )
 
